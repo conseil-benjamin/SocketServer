@@ -22,27 +22,36 @@ io.on('connection', (socket) => {
         socket.join(roomName);
 
         if (!rooms[roomName]) {
-            rooms[roomName] = { users: [{
-                username, points: 0
-                }], messages: [], roomName: roomName};
+            rooms[roomName] = { users: [{ username, points: 0 }], messages: [], roomName: roomName };
         } else if (!rooms[roomName].users.find(user => user.username === username)) {
             rooms[roomName].users.push({ username, points: 0 });
         }
 
         io.to(roomName).emit('roomData', rooms[roomName]);
         io.to(roomName).emit('message', { username: 'system', text: `${username} has joined the room.`, timestamp: new Date() });
+        io.emit('updateRooms', Object.entries(rooms).map(([roomId, roomData]) => ({
+            roomId,
+            ...roomData
+        }))); // Mise à jour des rooms globalement
         console.log(rooms);
     });
 
     socket.on('createRoom', ({ roomName, username, privateRoom }) => {
         socket.join(roomName);
         const code = generateRandomCode();
-        console.log(code);
-        rooms[roomName] = { users: [{
-                username, points: 0
-            }], messages: [], roomName: roomName, private: privateRoom, roomCode: code };
+        rooms[roomName] = {
+            users: [{ username, points: 0 }],
+            messages: [],
+            roomName: roomName,
+            private: privateRoom,
+            roomCode: code,
+        };
 
         io.to(roomName).emit('roomData', rooms[roomName]);
+        io.emit('updateRooms', Object.entries(rooms).map(([roomId, roomData]) => ({
+            roomId,
+            ...roomData
+        }))); // Mise à jour des rooms globalement
         console.log(rooms);
     });
 
@@ -50,13 +59,18 @@ io.on('connection', (socket) => {
         socket.leave(roomName);
 
         if (rooms[roomName]) {
-            rooms[roomName].users = rooms[roomName].users.filter(user => user !== username);
+            rooms[roomName].users = rooms[roomName].users.filter((user) => user.username !== username);
             io.to(roomName).emit('roomData', rooms[roomName]);
             io.to(roomName).emit('message', { username: 'system', text: `${username} has left the room.`, timestamp: new Date() });
 
             if (rooms[roomName].users.length === 0) {
                 delete rooms[roomName];
             }
+
+            io.emit('updateRooms', Object.entries(rooms).map(([roomId, roomData]) => ({
+                roomId,
+                ...roomData
+            }))); // Mise à jour des rooms globalement
         }
         console.log(rooms);
     });
