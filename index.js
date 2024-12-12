@@ -13,8 +13,6 @@ const io = new Server(server, {
     }
 });
 
-// faire un objet room avec qui contient un numéro de room, l'ensemble des users avec leur points associés, les messages ainsi que les règles de la room
-// faire un système de mise à jour des points des users
 const rooms = {};
 
 io.on('connection', (socket) => {
